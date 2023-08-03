@@ -166,7 +166,7 @@ int parse_data(char* c) {
 		return -1;
 	} else {
 		for (k = 0; k<len/2; k++) {
-			int byte;
+			unsigned int byte;
 
 			if (data_len==data_cap) {
 				data_cap *=2;
@@ -207,7 +207,7 @@ void finish_data() {
 
 
 int parse_command(char* cmd, char* c) {
-	int val;
+	unsigned int val;
 	uint32_t high1, high2;
 	char *fn, *pull;
 	char pin;
@@ -296,7 +296,7 @@ int parse_command(char* cmd, char* c) {
 		gpio_drive_set = true; //required field
 		
 		sscanf(c, "%100s %1x", cmd, &val);
-		if (val>8 || val<0) printf("Warning: gpio_drive property in invalid region, using default value instead\n");
+		if (val>8) printf("Warning: gpio_drive property in invalid region, using default value instead\n");
 		else ((struct gpio_map_d *) gpio_atom.data)->flags |= val;
 		
 		
@@ -305,7 +305,7 @@ int parse_command(char* cmd, char* c) {
 		
 		sscanf(c, "%100s %1x", cmd, &val);
 		
-		if (val>2 || val<0) printf("Warning: gpio_slew property in invalid region, using default value instead\n");
+		if (val>2) printf("Warning: gpio_slew property in invalid region, using default value instead\n");
 		else ((struct gpio_map_d *) gpio_atom.data)->flags |= val<<4;
 		
 	} else if (strcmp(cmd, "gpio_hysteresis")==0) {
@@ -313,7 +313,7 @@ int parse_command(char* cmd, char* c) {
 		
 		sscanf(c, "%100s %1x", cmd, &val);
 		
-		if (val>2 || val<0) printf("Warning: gpio_hysteresis property in invalid region, using default value instead\n");
+		if (val>2) printf("Warning: gpio_hysteresis property in invalid region, using default value instead\n");
 		else ((struct gpio_map_d *) gpio_atom.data)->flags |= val<<6;
 		
 	} else if (strcmp(cmd, "back_power")==0) {
@@ -321,7 +321,7 @@ int parse_command(char* cmd, char* c) {
 		
 		sscanf(c, "%100s %1x", cmd, &val);
 		
-		if (val>2 || val<0) printf("Warning: back_power property in invalid region, using default value instead\n");
+		if (val>2) printf("Warning: back_power property in invalid region, using default value instead\n");
 		else ((struct gpio_map_d *) gpio_atom.data)->power = val;
 		
 	} else if (strcmp(cmd, "bank1_gpio_drive")==0) {
@@ -330,7 +330,7 @@ int parse_command(char* cmd, char* c) {
 
 		sscanf(c, "%100s %1x", cmd, &val);
 
-		if (val>8 || val<0) printf("Warning: bank1 gpio_drive property in invalid region, using default value instead\n");
+		if (val>8) printf("Warning: bank1 gpio_drive property in invalid region, using default value instead\n");
 		else ((struct gpio_map_d *) gpio_atom_bank1.data)->flags |= val;
 
 	} else if (strcmp(cmd, "bank1_gpio_slew")==0) {
@@ -339,7 +339,7 @@ int parse_command(char* cmd, char* c) {
 
 		sscanf(c, "%100s %1x", cmd, &val);
 
-		if (val>2 || val<0) printf("Warning: bank1 gpio_slew property in invalid region, using default value instead\n");
+		if (val>2) printf("Warning: bank1 gpio_slew property in invalid region, using default value instead\n");
 		else ((struct gpio_map_d *) gpio_atom_bank1.data)->flags |= val<<4;
 
 	} else if (strcmp(cmd, "bank1_gpio_hysteresis")==0) {
@@ -348,14 +348,14 @@ int parse_command(char* cmd, char* c) {
 
 		sscanf(c, "%100s %1x", cmd, &val);
 
-		if (val>2 || val<0) printf("Warning: bank1 gpio_hysteresis property in invalid region, using default value instead\n");
+		if (val>2) printf("Warning: bank1 gpio_hysteresis property in invalid region, using default value instead\n");
 		else ((struct gpio_map_d *) gpio_atom_bank1.data)->flags |= val<<6;
 
 	} else if (strcmp(cmd, "setgpio")==0) {
 		fn = (char*) malloc (101);
 		pull = (char*) malloc (101);
 		
-		sscanf(c, "%100s %d %100s %100s", cmd, &val, fn, pull);
+		sscanf(c, "%100s %u %100s %100s", cmd, &val, fn, pull);
 		
 		if (val<GPIO_MIN || val>=GPIO_COUNT_TOTAL) printf("Error: GPIO number out of bounds\n");
 		else {
