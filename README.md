@@ -1,4 +1,14 @@
-# Utilities to create, flash and dump HAT EEPROM images.
+:floppy_disk: EEPROM utilities for Arduino Portenta X8
+======================================================
+
+This work is based on [`raspberrypi/hats`](https://github.com/raspberrypi/hats).
+
+### How-to-build
+```bash
+mkdir build && cd build
+cmake ..
+make
+```
 
 There is a complete, worked example at:
 https://www.raspberrypi.org/forums/viewtopic.php?t=108134
