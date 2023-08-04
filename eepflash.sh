@@ -145,14 +145,6 @@ if [ "$BUS" = "NOT_SET" ]; then
 	fi
 fi
 
-modprobe at24
-
-rc=$?
-if [ $rc != 0 ]; then
-	echo "Modprobe of at24 failed."
-	exit $rc
-fi
-
 SYS=/sys/class/i2c-adapter/i2c-$BUS
 
 if [ ! -d "$SYS/$BUS-00$ADDR" ]; then
