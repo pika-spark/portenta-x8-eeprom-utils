@@ -6,8 +6,8 @@ This work is based on [`raspberrypi/hats`](https://github.com/raspberrypi/hats).
 ### How-to-build
 ```bash
 mkdir build && cd build
-cmake ..
-make
+cmake .. && make
+sudo make install
 ```
 
 There is a complete, worked example at:
