@@ -10,7 +10,6 @@
 struct header_t header;
 struct atom_t atom;
 struct vendor_info_d vinf;
-struct gpio_map_d gpiomap;
 unsigned char* data;
 
 int read_bin(char *in, char *outf) {
@@ -79,17 +78,11 @@ int read_bin(char *in, char *outf) {
 			case ATOM_VENDOR_TYPE:
 				printf("vendor type");
 				break;
-			case ATOM_GPIO_TYPE:
-				printf("GPIO map");
-				break;
 			case ATOM_DT_TYPE:
 				printf("Linux device tree blob");
 				break;
 			case ATOM_CUSTOM_TYPE:
 				printf("manufacturer custom data");
-				break;
-			case ATOM_GPIO_BANK1_TYPE:
-				printf("GPIO map bank 1");
 				break;
 			default:
 				printf("unknown");
@@ -150,79 +143,7 @@ int read_bin(char *in, char *outf) {
 			fprintf(out, "product \"%s\"   # length=%u\n", vinf.pstr, vinf.pslen);
 			
 			if (!fread(&crc, CRC_SIZE, 1, fp)) goto err;
-			
-		} else if ((atom.type == ATOM_GPIO_TYPE) || (atom.type == ATOM_GPIO_BANK1_TYPE)) {
-			bool bank1 = (atom.type == ATOM_GPIO_BANK1_TYPE);
-			unsigned int gpio_count = bank1 ? GPIO_COUNT_BANK1 : GPIO_COUNT;
-			unsigned int read_size = bank1 ? GPIO_BANK1_SIZE : GPIO_SIZE;
 
-			//decode GPIO map
-			if (!fread(&gpiomap, read_size, 1, fp)) goto err;
-			
-			fprintf(out, "# GPIO ");
-			if (bank1)
-				fprintf(out, "bank 1 ");
-			fprintf(out, "map info\n");
-
-			if (bank1)
-				fprintf(out, "bank1_");
-			fprintf(out, "gpio_drive %d\n", gpiomap.flags & 15); //1111
-
-			if (bank1)
-				fprintf(out, "bank1_");
-			fprintf(out, "gpio_slew %d\n", (gpiomap.flags & 48)>>4); //110000
-
-			if (bank1)
-				fprintf(out, "bank1_");
-			fprintf(out, "gpio_hysteresis %d\n", (gpiomap.flags & 192)>>6); //11000000
-
-			if (!bank1)
-				fprintf(out, "back_power %d\n", gpiomap.power);
-			fprintf(out, "#        GPIO  FUNCTION  PULL\n#        ----  --------  ----\n");
-
-			for (j = 0; j < gpio_count; j++) {
-				if (gpiomap.pins[j] & (1<<7)) {
-					//board uses this pin
-					
-					char *pull_str = "INVALID";
-					switch ((gpiomap.pins[j] & 96)>>5) { //1100000
-						case 0:	pull_str = "DEFAULT";
-								break;
-						case 1: pull_str = "UP";
-								break;
-						case 2: pull_str = "DOWN";
-								break;
-						case 3: pull_str = "NONE";
-								break;
-					}
-					
-					char *func_str = "INVALID";
-					switch ((gpiomap.pins[j] & 7)) { //111
-						case 0:	func_str = "INPUT";
-								break;
-						case 1: func_str = "OUTPUT";
-								break;
-						case 4: func_str = "ALT0";
-								break;
-						case 5: func_str = "ALT1";
-								break;
-						case 6: func_str = "ALT2";
-								break;
-						case 7: func_str = "ALT3";
-								break;
-						case 3: func_str = "ALT4";
-								break;
-						case 2: func_str = "ALT5";
-								break;
-					}
-					
-					fprintf(out, "setgpio  %d      %s     %s\n",
-						bank1 ? j + GPIO_COUNT : j, func_str, pull_str);
-				}
-			}
-			
-			if (!fread(&crc, CRC_SIZE, 1, fp)) goto err;
-			
 		} else if (atom.type==ATOM_DT_TYPE) {
 			//decode DT blob
 			

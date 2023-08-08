@@ -3,28 +3,18 @@
 /* Atom types */
 #define ATOM_INVALID_TYPE   0x0000
 #define ATOM_VENDOR_TYPE    0x0001
-#define ATOM_GPIO_TYPE      0x0002
 #define ATOM_DT_TYPE        0x0003
 #define ATOM_CUSTOM_TYPE    0x0004
-#define ATOM_GPIO_BANK1_TYPE 0x0005
 #define ATOM_HINVALID_TYPE  0xffff
 
 #define ATOM_VENDOR_NUM     0x0000
-#define ATOM_GPIO_NUM       0x0001
 #define ATOM_DT_NUM         0x0002
 
 //minimal sizes of data structures
 #define HEADER_SIZE 12
 #define ATOM_SIZE   10
 #define VENDOR_SIZE 22
-#define GPIO_SIZE   30
-#define GPIO_BANK1_SIZE 20
 #define CRC_SIZE     2
-
-#define GPIO_MIN     2
-#define GPIO_COUNT        28
-#define GPIO_COUNT_BANK1  18
-#define GPIO_COUNT_TOTAL  (GPIO_COUNT + GPIO_COUNT_BANK1)
 
 #define FORMAT_VERSION 0x01
 
@@ -60,13 +50,6 @@ struct vendor_info_d {
 	unsigned char pslen;
 	char* vstr;
 	char* pstr;
-};
-
-/* GPIO map atom data */
-struct gpio_map_d {
-	unsigned char flags;
-	unsigned char power;
-	unsigned char pins[GPIO_COUNT];
 };
 
 uint16_t getcrc(char* data, unsigned int size)

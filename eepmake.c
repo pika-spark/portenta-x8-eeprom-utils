@@ -17,14 +17,12 @@
 //todo: larger initial mallocs
 
 struct header_t header;
-struct atom_t *custom_atom, vinf_atom, gpio_atom, gpio_atom_bank1, dt_atom;
+struct atom_t *custom_atom, vinf_atom, dt_atom;
 struct vendor_info_d* vinf;
 
-bool product_serial_set, product_id_set, product_ver_set, vendor_set, product_set, 
-			gpio_drive_set, gpio_slew_set, gpio_hysteresis_set, gpio_power_set,
-			bank1_gpio_drive_set, bank1_gpio_slew_set, bank1_gpio_hysteresis_set;
+bool product_serial_set, product_id_set, product_ver_set, vendor_set, product_set;
 			
-bool data_receive, has_dt, receive_dt, has_bank1;
+bool data_receive, has_dt, receive_dt;
 			
 char **data;
 char *current_atom; //rearranged to write out
@@ -66,23 +64,7 @@ int write_binary(char* out) {
 	
 	fwrite(current_atom, offset, 1, fp);
 	free(current_atom);
-	
-	current_atom = (char *) malloc(gpio_atom.dlen+ATOM_SIZE-CRC_SIZE);
-	offset = 0;
-	//GPIO map first part
-	memcpy(current_atom, &gpio_atom, ATOM_SIZE-CRC_SIZE);
-	offset += ATOM_SIZE-CRC_SIZE;
-	//GPIO data
-	memcpy(current_atom+offset, gpio_atom.data, GPIO_SIZE);
-	offset += GPIO_SIZE;
-	//GPIO map last part
-	crc = getcrc(current_atom, offset);
-	memcpy(current_atom+offset, &crc, CRC_SIZE);
-	offset += CRC_SIZE;
-	
-	fwrite(current_atom, offset, 1, fp);
-	free(current_atom);
-	
+
 	if (has_dt) {
 		printf("Writing out DT...\n");
 		current_atom = (char *) malloc(dt_atom.dlen+ATOM_SIZE-CRC_SIZE);
@@ -121,28 +103,7 @@ int write_binary(char* out) {
 		fwrite(current_atom, offset, 1, fp);
 		free(current_atom);
 	}
-	
-	if (has_bank1) {
-		current_atom = (char *) malloc(gpio_atom_bank1.dlen+ATOM_SIZE-CRC_SIZE);
-		offset = 0;
-		//GPIO map first part
-		gpio_atom_bank1.count = 2 + custom_ct;
-		if (has_dt)
-			gpio_atom_bank1.count++;
-		memcpy(current_atom, &gpio_atom_bank1, ATOM_SIZE-CRC_SIZE);
-		offset += ATOM_SIZE-CRC_SIZE;
-		//GPIO data
-		memcpy(current_atom+offset, gpio_atom_bank1.data, GPIO_BANK1_SIZE);
-		offset += GPIO_BANK1_SIZE;
-		//GPIO map last part
-		crc = getcrc(current_atom, offset);
-		memcpy(current_atom+offset, &crc, CRC_SIZE);
-		offset += CRC_SIZE;
 
-		fwrite(current_atom, offset, 1, fp);
-		free(current_atom);
-	}
-	
 	fflush(fp);
 	fclose(fp);
 	return 0;
@@ -208,11 +169,7 @@ void finish_data() {
 
 
 int parse_command(char* cmd, char* c) {
-	unsigned int val;
 	uint32_t high1, high2;
-	char *fn, *pull;
-	char pin;
-	bool valid;
 	bool continue_data=false;
 	
 	/* Vendor info related part */
@@ -292,125 +249,6 @@ int parse_command(char* cmd, char* c) {
 		vinf_atom.dlen+=vinf->pslen;
 	} 
 	
-	/* GPIO map related part */
-	else if (strcmp(cmd, "gpio_drive")==0) {
-		gpio_drive_set = true; //required field
-		
-		sscanf(c, "%100s %1x", cmd, &val);
-		if (val>8) printf("Warning: gpio_drive property in invalid region, using default value instead\n");
-		else ((struct gpio_map_d *) gpio_atom.data)->flags |= val;
-		
-		
-	} else if (strcmp(cmd, "gpio_slew")==0) {
-		gpio_slew_set = true; //required field
-		
-		sscanf(c, "%100s %1x", cmd, &val);
-		
-		if (val>2) printf("Warning: gpio_slew property in invalid region, using default value instead\n");
-		else ((struct gpio_map_d *) gpio_atom.data)->flags |= val<<4;
-		
-	} else if (strcmp(cmd, "gpio_hysteresis")==0) {
-		gpio_hysteresis_set = true; //required field
-		
-		sscanf(c, "%100s %1x", cmd, &val);
-		
-		if (val>2) printf("Warning: gpio_hysteresis property in invalid region, using default value instead\n");
-		else ((struct gpio_map_d *) gpio_atom.data)->flags |= val<<6;
-		
-	} else if (strcmp(cmd, "back_power")==0) {
-		gpio_power_set = true; //required field
-		
-		sscanf(c, "%100s %1x", cmd, &val);
-		
-		if (val>2) printf("Warning: back_power property in invalid region, using default value instead\n");
-		else ((struct gpio_map_d *) gpio_atom.data)->power = val;
-		
-	} else if (strcmp(cmd, "bank1_gpio_drive")==0) {
-		bank1_gpio_drive_set = true; //required field if bank 1 is used
-		has_bank1 = true;
-
-		sscanf(c, "%100s %1x", cmd, &val);
-
-		if (val>8) printf("Warning: bank1 gpio_drive property in invalid region, using default value instead\n");
-		else ((struct gpio_map_d *) gpio_atom_bank1.data)->flags |= val;
-
-	} else if (strcmp(cmd, "bank1_gpio_slew")==0) {
-		bank1_gpio_slew_set = true; //required field if bank 1 is used
-		has_bank1 = true;
-
-		sscanf(c, "%100s %1x", cmd, &val);
-
-		if (val>2) printf("Warning: bank1 gpio_slew property in invalid region, using default value instead\n");
-		else ((struct gpio_map_d *) gpio_atom_bank1.data)->flags |= val<<4;
-
-	} else if (strcmp(cmd, "bank1_gpio_hysteresis")==0) {
-		bank1_gpio_hysteresis_set = true; //required field if bank 1 is used
-		has_bank1 = true;
-
-		sscanf(c, "%100s %1x", cmd, &val);
-
-		if (val>2) printf("Warning: bank1 gpio_hysteresis property in invalid region, using default value instead\n");
-		else ((struct gpio_map_d *) gpio_atom_bank1.data)->flags |= val<<6;
-
-	} else if (strcmp(cmd, "setgpio")==0) {
-		fn = (char*) malloc (101);
-		pull = (char*) malloc (101);
-		
-		sscanf(c, "%100s %u %100s %100s", cmd, &val, fn, pull);
-		
-		if (val<GPIO_MIN || val>=GPIO_COUNT_TOTAL) printf("Error: GPIO number out of bounds\n");
-		else {
-			struct gpio_map_d *gpiomap = (struct gpio_map_d *) gpio_atom.data;
-
-			if (val >= GPIO_COUNT) {
-				gpiomap = (struct gpio_map_d *) gpio_atom_bank1.data;
-				val -= GPIO_COUNT;
-				has_bank1 = true;
-			}
-
-			valid = true;
-			pin = 0;
-			
-			if (strcmp(fn, "INPUT")==0) {
-				//no action
-			} else if (strcmp(fn, "OUTPUT")==0) {
-				pin |= 1;
-			} else if (strcmp(fn, "ALT0")==0) {
-				pin |= 4;
-			} else if (strcmp(fn, "ALT1")==0) {
-				pin |= 5;
-			} else if (strcmp(fn, "ALT2")==0) {
-				pin |= 6;
-			} else if (strcmp(fn, "ALT3")==0) {
-				pin |= 7;
-			} else if (strcmp(fn, "ALT4")==0) {
-				pin |= 3;
-			} else if (strcmp(fn, "ALT5")==0) {
-				pin |= 2;
-			} else {
-				printf("Error at setgpio: function type not recognised\n");
-				valid=false;
-			}
-			
-			if (strcmp(pull, "DEFAULT")==0) {
-				//no action
-			} else if (strcmp(pull, "UP")==0) {
-				pin |= 1<<5;
-			} else if (strcmp(pull, "DOWN")==0) {
-				pin |= 2<<5;
-			} else if (strcmp(pull, "NONE")==0) {
-				pin |= 3<<5;
-			} else {
-				printf("Error at setgpio: pull type not recognised\n");
-				valid=false;
-			}
-			
-			pin |= 1<<7; //board uses this pin
-			
-			if (valid) gpiomap->pins[val] = pin;
-		}
-	} 
-	
 	/* DT atom related part */
 	else if (strcmp(cmd, "dt_blob")==0) {
 		finish_data();
@@ -476,7 +314,6 @@ int parse_command(char* cmd, char* c) {
 }
 
 int read_text(char* in) {
-	struct gpio_map_d* gpiomap;
 	FILE * fp;
 	char * line = NULL;
 	char * c = NULL;
@@ -500,25 +337,14 @@ int read_text(char* in) {
 	custom_cap = 1;
 	custom_atom = (struct atom_t*) malloc(sizeof(struct atom_t) * custom_cap);
 	
-	total_size=ATOM_SIZE*2+HEADER_SIZE+VENDOR_SIZE+GPIO_SIZE;
+	total_size=ATOM_SIZE*2+HEADER_SIZE+VENDOR_SIZE;
 	
 	vinf_atom.type = ATOM_VENDOR_TYPE;
 	vinf_atom.count = ATOM_VENDOR_NUM;
 	vinf = (struct vendor_info_d *) calloc(1, sizeof(struct vendor_info_d));
 	vinf_atom.data = (char *)vinf;
 	vinf_atom.dlen = VENDOR_SIZE + CRC_SIZE;
-	
-	gpio_atom.type = ATOM_GPIO_TYPE;
-	gpio_atom.count = ATOM_GPIO_NUM;
-	gpiomap = (struct gpio_map_d *) calloc(1, sizeof(struct gpio_map_d));
-	gpio_atom.data = (char *)gpiomap;
-	gpio_atom.dlen = GPIO_SIZE + CRC_SIZE;
 
-	gpio_atom_bank1.type = ATOM_GPIO_BANK1_TYPE;
-	gpiomap = (struct gpio_map_d *) calloc(1, sizeof(struct gpio_map_d));
-	gpio_atom_bank1.data = (char *)gpiomap;
-	gpio_atom_bank1.dlen = GPIO_BANK1_SIZE + CRC_SIZE;
-	
 	while ((read = getline(&line, &len, fp)) != -1) {
 		linect++;
 		c = line;
@@ -548,16 +374,10 @@ int read_text(char* in) {
 	
 	finish_data();
 	
-	if (!product_serial_set || !product_id_set || !product_ver_set || !vendor_set || !product_set || 
-			!gpio_drive_set || !gpio_slew_set || !gpio_hysteresis_set || !gpio_power_set) {
-			
+	if (!product_serial_set || !product_id_set || !product_ver_set || !vendor_set || !product_set) {
 		printf("Warning: required fields missing in vendor information or GPIO map, using default values\n");
 	}
 
-	if (has_bank1 && (!bank1_gpio_drive_set || !bank1_gpio_slew_set || !bank1_gpio_hysteresis_set)) {
-		printf("Warning: required fields missing in GPIO map of bank 1, using default values\n");
-	}
-	
 	printf("Done reading\n");
 	
 	return 0;
@@ -688,13 +508,10 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-	if (has_bank1)
-		total_size += (ATOM_SIZE + GPIO_BANK1_SIZE);
-	
 	header.signature = htole32(HEADER_SIGN);
 	header.ver = FORMAT_VERSION;
 	header.res = 0;
-	header.numatoms = 2+has_dt+custom_ct+has_bank1;
+	header.numatoms = 2+has_dt+custom_ct;
 	header.eeplen = total_size;
 	
 	printf("Writing out...\n");
