@@ -1,5 +1,7 @@
 :floppy_disk: EEPROM utilities for Arduino Portenta X8
 ======================================================
+[![Smoke test status](https://github.com/pika-spark/portenta-x8-eeprom-utils/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/pika-spark/portenta-x8-eeprom-utils/actions/workflows/smoke-test.yml)
+[![Spell Check status](https://github.com/pika-spark/portenta-x8-eeprom-utils/actions/workflows/spell-check.yml/badge.svg)](https://github.com/pika-spark/portenta-x8-eeprom-utils/actions/workflows/spell-check.yml)
 
 This work is based on [`raspberrypi/hats`](https://github.com/raspberrypi/hats).
 
