@@ -15,4 +15,5 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 ##########################################################################
 install(TARGETS ${EEPMAKE_TARGET} ${EEPDUMP_TARGET} DESTINATION bin)
+install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/eepflash.sh DESTINATION bin)
 ##########################################################################
